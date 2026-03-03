@@ -5,7 +5,7 @@ inclusion: always
 
 ## Philosophy
 
-Dropr solves the fragmented, trust-lacking marketplace problem for maker communities through time-limited product drops—curated events featuring limited-run items, themed bundles, and surplus from verified makers. We're built for makers who value seeing the "bones" of things—electronic makers, PC modders, and miniature hobbyists who appreciate craftsmanship, understand complexity, and find beauty in function. Our creative direction celebrates technical clarity, structural honesty, and the thrill of discovery through real events. The brand is high-energy yet approachable, technical yet playful, exclusive yet welcoming.
+Dropr solves the fragmented, trust-lacking marketplace problem for maker communities through time-limited product drops—curated events featuring limited-run items, themed bundles, and surplus from verified makers. We're built for makers who value seeing the "bones" of things - electronic makers, PC modders, and miniature hobbyists who appreciate craftsmanship, understand complexity, and find beauty in function. Our creative direction celebrates technical clarity, structural honesty, and the thrill of discovery through real events. The brand is high-energy yet approachable, technical yet playful, exclusive yet welcoming.
 
 ## Creative Direction Checklist
 

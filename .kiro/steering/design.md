@@ -84,6 +84,13 @@ Design for makers who value seeing the "bones" of things. Prioritize technical c
 - Warning: `#f59e0b` (orange)
 - Error: `#ef4444` (red)
 
+**Collective-Specific Accent Colors:**
+- **Mod Collective:** `#8b5cf6` (vibrant purple) - keyboards, switches, technical precision
+- **Make Collective:** `#06b6d4` (cyan) - electronics, circuits, innovation
+- **Mini Collective:** `#ec4899` (hot pink) - artistry, detail, craftsmanship
+
+These accent colors are applied dynamically based on subdomain (mod.dropr.com, make.dropr.com, mini.dropr.com) to create distinct visual identities for each community while maintaining cohesive design system.
+
 **Light Mode Primary:**
 - Background: `#ffffff` (white)
 - Surface: `#f9fafb` (light gray)
@@ -169,6 +176,196 @@ Design for makers who value seeing the "bones" of things. Prioritize technical c
 - Countdown timer (if active)
 - Curator info card
 - Description with rich formatting
+
+## Collective-Specific Theming
+
+Each collective (Mod, Make, Mini) has its own visual identity while sharing the core design system. The subdomain architecture (mod.dropr.com, make.dropr.com, mini.dropr.com) enables dynamic theming based on which collective the user is visiting.
+
+### Collective Visual Identity
+
+**Mod Collective (mod.dropr.com):**
+- **Accent Color:** `#8b5cf6` (vibrant purple)
+- **Iconography:** Keyboard switches, keycaps, mechanical parts
+- **Background Pattern:** Grid (technical precision)
+- **Hero Imagery:** Mechanical keyboards, custom builds, artisan keycaps
+- **Tagline:** "Curated Drops for Keyboard Enthusiasts & PC Modders"
+- **Vibe:** Technical precision, customization, performance
+
+**Make Collective (make.dropr.com):**
+- **Accent Color:** `#06b6d4` (cyan)
+- **Iconography:** Circuit boards, resistors, 3D printer nozzles
+- **Background Pattern:** Circuit board traces
+- **Hero Imagery:** DIY electronics, 3D prints, modular synth modules
+- **Tagline:** "Curated Drops for DIY Electronics & 3D Printing"
+- **Vibe:** Innovation, experimentation, creation
+
+**Mini Collective (mini.dropr.com):**
+- **Accent Color:** `#ec4899` (hot pink)
+- **Iconography:** Paintbrushes, miniatures, detail tools
+- **Background Pattern:** Hexagon grid (tabletop gaming)
+- **Hero Imagery:** Painted miniatures, model kits, terrain pieces
+- **Tagline:** "Curated Drops for Miniature Painters & Collectors"
+- **Vibe:** Artistry, craftsmanship, detail
+
+### Implementation Pattern
+
+**Collective Configuration:**
+```typescript
+// lib/collective-config.ts
+export const collectiveConfig = {
+  mod: {
+    name: 'Mod Collective',
+    tagline: 'Curated Drops for Keyboard Enthusiasts & PC Modders',
+    description: 'Discover limited-run keycaps, switches, and custom builds from verified community experts.',
+    heroImage: '/images/hero-mod.jpg',
+    accentColor: '#8b5cf6',
+    accentColorRGB: '139, 92, 246',
+    icon: 'keyboard',
+    pattern: 'grid',
+    keywords: ['mechanical keyboards', 'keycaps', 'switches', 'custom builds', 'artisan keycaps'],
+  },
+  make: {
+    name: 'Make Collective',
+    tagline: 'Curated Drops for DIY Electronics & 3D Printing',
+    description: 'Find DIY kits, 3D printing supplies, and modular synth modules from trusted makers.',
+    heroImage: '/images/hero-make.jpg',
+    accentColor: '#06b6d4',
+    accentColorRGB: '6, 182, 212',
+    icon: 'circuit',
+    pattern: 'circuit-board',
+    keywords: ['DIY electronics', '3D printing', 'modular synth', 'maker kits', 'components'],
+  },
+  mini: {
+    name: 'Mini Collective',
+    tagline: 'Curated Drops for Miniature Painters & Collectors',
+    description: 'Explore painted miniatures, rare models, and painting supplies from skilled artists.',
+    heroImage: '/images/hero-mini.jpg',
+    accentColor: '#ec4899',
+    accentColorRGB: '236, 72, 153',
+    icon: 'paintbrush',
+    pattern: 'hexagon',
+    keywords: ['miniatures', 'model kits', 'painting', 'warhammer', 'tabletop gaming'],
+  },
+};
+
+export type Collective = keyof typeof collectiveConfig;
+```
+
+**Dynamic Theming in Layout:**
+```typescript
+// app/layout.tsx
+import { headers } from 'next/headers';
+import { collectiveConfig, type Collective } from '@/lib/collective-config';
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const collective = headers().get('x-collective') as Collective | null;
+  const config = collective ? collectiveConfig[collective] : null;
+  
+  return (
+    <html 
+      lang="en" 
+      style={{
+        '--collective-accent': config?.accentColor || '#8b5cf6',
+        '--collective-accent-rgb': config?.accentColorRGB || '139, 92, 246',
+      } as React.CSSProperties}
+    >
+      <body className={config?.pattern}>
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+**Using Collective Theme in Components:**
+```typescript
+// components/Hero.tsx
+import { headers } from 'next/headers';
+import { collectiveConfig, type Collective } from '@/lib/collective-config';
+
+export function Hero() {
+  const collective = headers().get('x-collective') as Collective | null;
+  const config = collective ? collectiveConfig[collective] : {
+    tagline: 'Curated Mystery Drops for Makers & Modders',
+    description: 'Discover limited releases from verified community experts.',
+    heroImage: '/images/hero-default.jpg',
+  };
+  
+  return (
+    <section className="hero">
+      <img src={config.heroImage} alt="Hero" className="hero-image" />
+      <h1 className="text-collective-accent">{config.tagline}</h1>
+      <p>{config.description}</p>
+    </section>
+  );
+}
+```
+
+**CSS Custom Properties:**
+```css
+/* app/globals.css */
+.text-collective-accent {
+  color: var(--collective-accent);
+}
+
+.bg-collective-accent {
+  background-color: var(--collective-accent);
+}
+
+.border-collective-accent {
+  border-color: var(--collective-accent);
+}
+
+.bg-collective-accent-subtle {
+  background-color: rgba(var(--collective-accent-rgb), 0.1);
+}
+
+/* Pattern backgrounds */
+.grid {
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.circuit-board {
+  background-image: url('/patterns/circuit-board.svg');
+  background-size: 200px 200px;
+  opacity: 0.05;
+}
+
+.hexagon {
+  background-image: url('/patterns/hexagon.svg');
+  background-size: 100px 100px;
+  opacity: 0.05;
+}
+```
+
+### Content Customization
+
+**Headlines and Messaging:**
+- Adapt H1s, taglines, and value propositions per collective
+- Use collective-specific terminology (e.g., "group buy extras" for Mod, "surplus filament" for Make)
+- Feature collective-relevant curators and drops
+
+**Navigation:**
+- Collective-specific featured categories
+- Relevant curator spotlights
+- Community-specific resources and guides
+
+**SEO:**
+- Collective-specific meta titles and descriptions
+- Targeted keywords per collective
+- Structured data with collective context
+
+### Benefits
+
+- **Community Identity:** Each collective feels like its own distinct community
+- **Focused Discovery:** Users only see relevant content for their interests
+- **Better Conversion:** Targeted messaging resonates with specific audiences
+- **Easier Marketing:** Can market to each community with tailored campaigns
+- **Scalability:** Easy to add new collectives with same pattern
+- **Shared Codebase:** All customization through configuration, not separate code
 
 ## Design System Checklist
 

@@ -5,27 +5,29 @@
 The buyer drop experience is built as a full-stack Next.js application with the following key components:
 
 ### 1.1 Frontend Architecture
-- **Framework**: Next.js 14+ (App Router) with TypeScript
+- **Framework**: Next.js 15+ (App Router) with TypeScript
 - **Rendering**: Hybrid SSR/SSG for SEO + Client-side for interactivity
-- **State Management**: React Query (TanStack Query) for server state, Zustand for client state
-- **Styling**: Tailwind CSS for responsive design
-- **Real-time Updates**: Server-Sent Events (SSE) or WebSocket for live inventory and countdown timers
+- **State Management**: MVVM pattern with scoped Zustand stores (Context Provider pattern), Server Actions for mutations
+- **Styling**: Tailwind CSS v4 (configured in app/globals.css with @theme directive)
+- **Real-time Updates**: Server-Sent Events (SSE) for live inventory and countdown timers
 - **Forms**: React Hook Form with Zod validation
+- **UI Components**: shadcn/ui with Base UI primitives (not Radix)
 
 ### 1.2 Backend Architecture
-- **API**: Next.js API Routes (App Router route handlers)
-- **Database**: PostgreSQL with Prisma ORM
-- **Cache**: Redis for session management, real-time inventory, and rate limiting
-- **Queue**: BullMQ for background jobs (emails, notifications, order processing)
-- **Storage**: Vercel Blob or S3 for images and media
-- **Middleware**: Next.js middleware for auth, rate limiting, bot protection
+- **API**: Next.js API Routes (App Router route handlers) + Server Actions
+- **Database**: PostgreSQL with Prisma ORM (cuid() for IDs)
+- **Cache**: Next.js built-in caching with revalidateTag() (no external Redis for caching)
+- **Queue**: BullMQ with Redis for background jobs (emails, notifications, order processing)
+- **Storage**: Vercel Blob for images and media
+- **Middleware**: Next.js middleware for subdomain detection, auth, rate limiting, bot protection
 
 ### 1.3 External Integrations
-- **Payment Processing**: Stripe with Connect for escrow
-- **Email Service**: Resend or SendGrid for transactional emails
+- **Payment Processing**: Stripe with Connect for escrow (20% platform fee, capture_method: 'manual')
+- **Email Service**: Resend for transactional emails
 - **SMS Service**: Twilio for SMS notifications
 - **Shipping**: EasyPost or Shippo for tracking integration
-- **Analytics**: Vercel Analytics + Mixpanel for user behavior tracking
+- **Analytics**: Vercel Analytics for performance
+- **Error Monitoring**: Sentry for error tracking
 
 ## 2. Database Schema (Prisma)
 
@@ -40,35 +42,49 @@ model Drop {
   curator           Curator  @relation(fields: [curatorId], references: [id])
   
   title             String
+  slug              String   @unique
   description       String   @db.Text
   theme             String?
   
   // Categorization
+  type              DropType
   collective        Collective
+  category          String
   tags              String[]
   
   // Pricing & Inventory
-  tiers             DropTier[]
+  price             Decimal  @db.Decimal(10, 2)
+  minValue          Decimal? @db.Decimal(10, 2) // For mystery boxes
+  inventory         Int
+  sold              Int      @default(0)
+  reserved          Int      @default(0) // Items in carts
   
   // Media
-  thumbnailUrl      String
+  coverImage        String
   heroImageUrl      String?
   videoUrl          String?
-  images            String[]
+  images            Json?    // Array of additional image URLs
   
   // Status & Timing
-  status            DropStatus
-  closeDate         DateTime
-  estimatedShipDate DateTime
+  status            DropStatus @default(DRAFT)
+  startTime         DateTime?
+  duration          Int?     // Hours
+  endTime           DateTime?
+  estimatedShipDate DateTime?
   
   // Policies
-  shippingPolicy    String   @db.Text
+  shippingPolicy    String?  @db.Text
+  shippingConfig    Json?
+  
+  // Analytics
+  views             Int      @default(0)
+  saves             Int      @default(0)
+  shares            Int      @default(0)
   
   // Metadata
-  isSurprise        Boolean  @default(true)
-  isRevealed        Boolean  @default(false)
   isFeatured        Boolean  @default(false)
-  isTrending        Boolean  @default(false)
+  featuredAt        DateTime?
+  moderationStatus  ModerationStatus @default(APPROVED)
   
   orders            Order[]
   reviews           Review[]
@@ -77,29 +93,15 @@ model Drop {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   
-  @@index([collective, status, closeDate])
+  @@index([collective, status, startTime])
   @@index([curatorId])
-  @@index([isFeatured, isTrending])
+  @@index([isFeatured])
+  @@index([slug])
+  @@index([status])
+  @@index([category])
 }
 
-model DropTier {
-  id                String   @id @default(cuid())
-  dropId            String
-  drop              Drop     @relation(fields: [dropId], references: [id], onDelete: Cascade)
-  
-  name              String   // "Starter", "Enthusiast", "Premium"
-  price             Decimal  @db.Decimal(10, 2)
-  estimatedValueMin Decimal  @db.Decimal(10, 2)
-  estimatedValueMax Decimal  @db.Decimal(10, 2)
-  itemCountMin      Int
-  itemCountMax      Int
-  quantity          Int
-  quantityRemaining Int
-  
-  orders            Order[]
-  
-  @@index([dropId])
-}
+
 
 model Order {
   id                String      @id @default(cuid())
@@ -107,13 +109,13 @@ model Order {
   buyer             Buyer       @relation(fields: [buyerId], references: [id])
   dropId            String
   drop              Drop        @relation(fields: [dropId], references: [id])
-  tierId            String
-  tier              DropTier    @relation(fields: [tierId], references: [id])
   
   // Payment
   status            OrderStatus
   paymentIntentId   String      @unique
   amount            Decimal     @db.Decimal(10, 2)
+  platformFee       Decimal     @db.Decimal(10, 2) // 20% of amount
+  curatorPayout     Decimal     @db.Decimal(10, 2) // 80% of amount
   
   // Shipping
   shippingAddress   Json
@@ -128,6 +130,7 @@ model Order {
   shippedAt         DateTime?
   deliveredAt       DateTime?
   revealedAt        DateTime?
+  escrowReleasedAt  DateTime?
   
   review            Review?
   dispute           Dispute?
@@ -284,14 +287,22 @@ model Dispute {
 enum Collective {
   MOD
   MAKE
-  HOBBY
+  MINI
+}
+
+enum DropType {
+  MYSTERY_BOX
+  SURPLUS
+  LIMITED_EDITION
 }
 
 enum DropStatus {
-  UPCOMING
-  ACTIVE
-  CLOSED
-  FULFILLED
+  DRAFT
+  SCHEDULED
+  LIVE
+  SOLD_OUT
+  ENDED
+  ARCHIVED
   CANCELLED
 }
 
@@ -444,6 +455,22 @@ import { verifyAuth } from '@/lib/auth';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const host = request.headers.get('host') || '';
+  
+  // Detect subdomain and add collective header
+  const subdomain = host.split('.')[0];
+  const collectiveMap: Record<string, string> = {
+    'make': 'MAKE',
+    'mod': 'MOD',
+    'mini': 'MINI',
+  };
+  
+  const collective = collectiveMap[subdomain];
+  const response = NextResponse.next();
+  
+  if (collective) {
+    response.headers.set('x-collective', collective);
+  }
   
   // Rate limiting for API routes
   if (pathname.startsWith('/api/')) {
@@ -469,12 +496,78 @@ export async function middleware(request: NextRequest) {
     // Implement bot detection logic
   }
   
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {
-  matcher: ['/api/:path*', '/orders/:path*', '/settings/:path*', '/checkout/:path*'],
+  matcher: ['/api/:path*', '/orders/:path*', '/settings/:path*', '/checkout/:path*', '/drops/:path*'],
 };
+```
+
+### 3.3 Collective-Specific Theming
+
+```typescript
+// lib/collective-config.ts
+export const collectiveConfig = {
+  MOD: {
+    name: 'Mod',
+    subdomain: 'mod',
+    color: {
+      primary: '#8b5cf6', // purple-500
+      primaryDark: '#7c3aed', // purple-600
+      primaryLight: '#a78bfa', // purple-400
+    },
+    iconography: 'keyboard', // keyboard, switches, keycaps
+    pattern: 'grid',
+    headline: 'Curated drops for keyboard enthusiasts',
+    description: 'Discover mystery boxes, surplus, and limited editions from verified makers',
+  },
+  MAKE: {
+    name: 'Make',
+    subdomain: 'make',
+    color: {
+      primary: '#06b6d4', // cyan-500
+      primaryDark: '#0891b2', // cyan-600
+      primaryLight: '#22d3ee', // cyan-400
+    },
+    iconography: 'circuit', // circuit boards, components, tools
+    pattern: 'circuit-board',
+    headline: 'Curated drops for makers and builders',
+    description: 'Find electronics, 3D printing, and modular synth drops',
+  },
+  MINI: {
+    name: 'Mini',
+    subdomain: 'mini',
+    color: {
+      primary: '#ec4899', // pink-500
+      primaryDark: '#db2777', // pink-600
+      primaryLight: '#f472b6', // pink-400
+    },
+    iconography: 'paintbrush', // miniatures, paints, brushes
+    pattern: 'hexagon',
+    headline: 'Curated drops for miniature hobbyists',
+    description: 'Discover paints, miniatures, and hobby supplies',
+  },
+};
+
+// Usage in components
+export function useCollective() {
+  const collective = headers().get('x-collective') as keyof typeof collectiveConfig;
+  return collectiveConfig[collective] || collectiveConfig.MOD;
+}
+```
+
+### 3.4 Dynamic Theming with CSS Custom Properties
+
+```css
+/* app/globals.css */
+@theme {
+  --color-collective-primary: var(--collective-primary, #8b5cf6);
+  --color-collective-primary-dark: var(--collective-primary-dark, #7c3aed);
+  --color-collective-primary-light: var(--collective-primary-light, #a78bfa);
+}
+
+/* Applied dynamically via inline styles based on collective */
 ```
 
 ## 4. Component Design

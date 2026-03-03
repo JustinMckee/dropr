@@ -130,6 +130,210 @@ dropr/
 └── public/                       # Static assets
 ```
 
+## Subdomain Architecture
+
+**Collective-Specific Subdomains:**
+
+Use subdomains to separate the three collectives, providing focused experiences for each community:
+
+- **make.dropr.com** - The Make Collective (DIY electronics, 3D printing, modular synth)
+- **mod.dropr.com** - The Mod Collective (mechanical keyboards, PC modding, gaming)
+- **mini.dropr.com** - The Mini Collective (miniatures, model kits, figurines)
+- **dropr.com** - Main landing page with collective selection
+
+**Important: Single Deployment Architecture**
+
+All subdomains are served by ONE deployment:
+- Single codebase
+- Single build process
+- Single Vercel deployment
+- Shared database and infrastructure
+- Middleware detects subdomain and filters content
+
+This is NOT:
+- ❌ Separate deployments per subdomain
+- ❌ Redirections between domains
+- ❌ Multiple codebases
+- ❌ Separate databases
+
+This IS:
+- ✅ One deployment serving multiple subdomains
+- ✅ Middleware detecting which subdomain user is on
+- ✅ Content filtered by collective based on subdomain
+- ✅ Shared infrastructure with collective-specific views
+
+**Benefits:**
+- Clear separation of communities and content
+- Focused discovery (only relevant drops for each collective)
+- Better SEO (collective-specific keywords)
+- Easier to market to specific communities
+- Allows collective-specific branding and design
+- Simpler navigation and filtering
+- Deploy once, all subdomains updated
+- Lower infrastructure costs (single deployment)
+- Easy to add new collectives (just add DNS record)
+
+**Implementation:**
+- Next.js middleware to detect subdomain and add header
+- Shared codebase with collective-aware components
+- Database filtering by collective using header
+- Collective-specific analytics and metrics
+
+**Technical Approach:**
+```typescript
+// middleware.ts
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+
+export function middleware(request: NextRequest) {
+  const hostname = request.headers.get('host') || '';
+  const subdomain = hostname.split('.')[0];
+  
+  // Map subdomains to collectives
+  const collectiveMap: Record<string, string> = {
+    'make': 'make',
+    'mod': 'mod',
+    'mini': 'mini',
+  };
+  
+  const collective = collectiveMap[subdomain];
+  
+  if (collective) {
+    // Add collective to request headers for use in app
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set('x-collective', collective);
+    
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
+  }
+  
+  return NextResponse.next();
+}
+```
+
+**Using Collective in Components:**
+```typescript
+// Server Component
+import { headers } from 'next/headers';
+
+export default async function DropsPage() {
+  const headersList = headers();
+  const collective = headersList.get('x-collective');
+  
+  // Fetch drops filtered by collective
+  const drops = await getDropsByCollective(collective);
+  
+  return <DropList drops={drops} collective={collective} />;
+}
+
+// Server Action
+'use server'
+import { headers } from 'next/headers';
+
+export async function getDropsByCollective(collective: string | null) {
+  return await db.drop.findMany({
+    where: collective ? { collective } : {},
+  });
+}
+```
+
+**Collective-Specific Theming:**
+
+The `x-collective` header enables collective-specific branding and content:
+
+**Visual Customization:**
+- Hero imagery (keyboards for Mod, electronics for Make, miniatures for Mini)
+- Iconography (switches for Mod, resistors for Make, paintbrushes for Mini)
+- Color accents (purple for Mod, cyan for Make, pink for Mini)
+- Background patterns (grid for Mod, circuit for Make, hex for Mini)
+
+**Content Customization:**
+- Headlines: "Curated Drops for Keyboard Enthusiasts" vs "Curated Drops for Makers"
+- Value propositions tailored to each community
+- Featured curators from that collective
+- Community-specific terminology and language
+
+**Implementation Example:**
+```typescript
+// lib/collective-config.ts
+export const collectiveConfig = {
+  mod: {
+    name: 'Mod Collective',
+    tagline: 'Curated Drops for Keyboard Enthusiasts & PC Modders',
+    heroImage: '/images/hero-mod.jpg',
+    accentColor: '#8b5cf6', // purple
+    icon: 'keyboard',
+    pattern: 'grid',
+  },
+  make: {
+    name: 'Make Collective',
+    tagline: 'Curated Drops for DIY Electronics & 3D Printing',
+    heroImage: '/images/hero-make.jpg',
+    accentColor: '#06b6d4', // cyan
+    icon: 'circuit',
+    pattern: 'circuit-board',
+  },
+  mini: {
+    name: 'Mini Collective',
+    tagline: 'Curated Drops for Miniature Painters & Collectors',
+    heroImage: '/images/hero-mini.jpg',
+    accentColor: '#ec4899', // pink
+    icon: 'paintbrush',
+    pattern: 'hexagon',
+  },
+};
+
+// app/page.tsx
+import { headers } from 'next/headers';
+import { collectiveConfig } from '@/lib/collective-config';
+
+export default async function HomePage() {
+  const collective = headers().get('x-collective') as 'mod' | 'make' | 'mini' | null;
+  const config = collective ? collectiveConfig[collective] : null;
+  
+  return (
+    <div className={config?.pattern}>
+      <h1 style={{ color: config?.accentColor }}>
+        {config?.tagline || 'Curated Mystery Drops for Makers & Modders'}
+      </h1>
+      <img src={config?.heroImage || '/images/hero-default.jpg'} alt="Hero" />
+    </div>
+  );
+}
+```
+
+**CSS Custom Properties:**
+```typescript
+// app/layout.tsx
+import { headers } from 'next/headers';
+import { collectiveConfig } from '@/lib/collective-config';
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const collective = headers().get('x-collective') as 'mod' | 'make' | 'mini' | null;
+  const config = collective ? collectiveConfig[collective] : null;
+  
+  return (
+    <html lang="en" style={{
+      '--collective-accent': config?.accentColor || '#8b5cf6',
+    } as React.CSSProperties}>
+      <body>{children}</body>
+    </html>
+  );
+}
+```
+
+This allows each collective to feel like its own distinct community while sharing the same codebase!
+
+**URL Structure:**
+- `make.dropr.com/drops` - All Make Collective drops
+- `mod.dropr.com/drops/[slug]` - Specific drop in Mod Collective
+- `mini.dropr.com/curators/[username]` - Curator profile in Mini Collective
+- `dropr.com` - Main landing page with collective selection
+- `dropr.com/drops` - All drops across all collectives (optional)
+
 ## Component Structure
 
 ```

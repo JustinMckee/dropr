@@ -1,0 +1,400 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================================
+// USER & AUTHENTICATION
+// ============================================================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  password      String?   // Hashed with bcrypt
+  
+  role          UserRole  @default(BUYER)
+  
+  // Relations
+  accounts      Account[]
+  sessions      Session[]
+  buyer         Buyer?
+  curator       Curator?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@index([email])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  
+  @@unique([identifier, token])
+}
+
+enum UserRole {
+  BUYER
+  CURATOR
+  ADMIN
+}
+
+
+// ============================================================================
+// BUYER & CURATOR PROFILES
+// ============================================================================
+
+model Buyer {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  phone                 String?
+  
+  // Preferences
+  preferredCollectives  Collective[]
+  
+  // Notifications
+  emailNotifications    Boolean  @default(true)
+  smsNotifications      Boolean  @default(false)
+  pushNotifications     Boolean  @default(false)
+  notifyFollowedCurators Boolean @default(true)
+  notifyEndingSoon      Boolean  @default(true)
+  notifyNewDrops        Boolean  @default(true)
+  
+  // Saved Info
+  defaultShippingAddress Json?
+  stripeCustomerId      String?  @unique
+  
+  orders                Order[]
+  reviews               Review[]
+  curatorFollows        CuratorFollow[]
+  dropFollows           DropFollow[]
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  @@index([userId])
+}
+
+model Curator {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  businessName      String
+  slug              String   @unique
+  bio               String?  @db.Text
+  avatarUrl         String?
+  
+  // Reputation
+  reputationScore   Decimal  @db.Decimal(3, 2) @default(0)
+  totalDrops        Int      @default(0)
+  completedDrops    Int      @default(0)
+  averageRating     Decimal? @db.Decimal(3, 2)
+  
+  // Stripe Connect
+  stripeAccountId   String?  @unique
+  stripeOnboarded   Boolean  @default(false)
+  
+  drops             Drop[]
+  reviews           Review[]
+  followers         CuratorFollow[]
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([slug])
+  @@index([reputationScore])
+}
+
+model CuratorFollow {
+  id          String   @id @default(cuid())
+  buyerId     String
+  buyer       Buyer    @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  curatorId   String
+  curator     Curator  @relation(fields: [curatorId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  
+  @@unique([buyerId, curatorId])
+  @@index([buyerId])
+  @@index([curatorId])
+}
+
+
+// ============================================================================
+// DROPS
+// ============================================================================
+
+model Drop {
+  id                String   @id @default(cuid())
+  curatorId         String
+  curator           Curator  @relation(fields: [curatorId], references: [id])
+  
+  title             String
+  slug              String   @unique
+  description       String   @db.Text
+  theme             String?
+  
+  // Categorization
+  type              DropType
+  collective        Collective
+  category          String
+  tags              String[]
+  
+  // Pricing & Inventory
+  price             Decimal  @db.Decimal(10, 2)
+  minValue          Decimal? @db.Decimal(10, 2) // For mystery boxes
+  inventory         Int
+  sold              Int      @default(0)
+  reserved          Int      @default(0) // Items in carts
+  
+  // Media
+  coverImage        String
+  heroImageUrl      String?
+  videoUrl          String?
+  images            Json?    // Array of additional image URLs
+  
+  // Status & Timing
+  status            DropStatus @default(DRAFT)
+  startTime         DateTime?
+  duration          Int?     // Hours
+  endTime           DateTime?
+  estimatedShipDate DateTime?
+  
+  // Policies
+  shippingPolicy    String?  @db.Text
+  shippingConfig    Json?
+  
+  // Analytics
+  views             Int      @default(0)
+  saves             Int      @default(0)
+  shares            Int      @default(0)
+  
+  // Metadata
+  isFeatured        Boolean  @default(false)
+  featuredAt        DateTime?
+  moderationStatus  ModerationStatus @default(APPROVED)
+  
+  orders            Order[]
+  reviews           Review[]
+  follows           DropFollow[]
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([collective, status, startTime])
+  @@index([curatorId])
+  @@index([isFeatured])
+  @@index([slug])
+  @@index([status])
+  @@index([category])
+}
+
+model DropFollow {
+  id        String   @id @default(cuid())
+  buyerId   String
+  buyer     Buyer    @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  dropId    String
+  drop      Drop     @relation(fields: [dropId], references: [id], onDelete: Cascade)
+  
+  notifyOnLive Boolean @default(true)
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([buyerId, dropId])
+  @@index([buyerId])
+  @@index([dropId])
+}
+
+enum DropType {
+  MYSTERY_BOX
+  SURPLUS
+  LIMITED_EDITION
+}
+
+enum DropStatus {
+  DRAFT
+  SCHEDULED
+  LIVE
+  SOLD_OUT
+  ENDED
+  ARCHIVED
+  CANCELLED
+}
+
+enum Collective {
+  MOD
+  MAKE
+  MINI
+}
+
+
+// ============================================================================
+// ORDERS
+// ============================================================================
+
+model Order {
+  id                String      @id @default(cuid())
+  buyerId           String
+  buyer             Buyer       @relation(fields: [buyerId], references: [id])
+  dropId            String
+  drop              Drop        @relation(fields: [dropId], references: [id])
+  
+  // Payment
+  status            OrderStatus
+  paymentIntentId   String      @unique
+  amount            Decimal     @db.Decimal(10, 2)
+  platformFee       Decimal     @db.Decimal(10, 2) // 20% of amount
+  curatorPayout     Decimal     @db.Decimal(10, 2) // 80% of amount
+  
+  // Shipping
+  shippingAddress   Json
+  trackingNumber    String?
+  trackingUrl       String?
+  carrier           String?
+  
+  // Lifecycle
+  paidAt            DateTime?
+  closedAt          DateTime?
+  packedAt          DateTime?
+  shippedAt         DateTime?
+  deliveredAt       DateTime?
+  revealedAt        DateTime?
+  escrowReleasedAt  DateTime?
+  
+  review            Review?
+  dispute           Dispute?
+  
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  
+  @@index([buyerId, status])
+  @@index([dropId])
+  @@index([status, updatedAt])
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  CLOSED
+  PACKING
+  SHIPPED
+  DELIVERED
+  REVEALED
+  CANCELLED
+  DISPUTED
+}
+
+// ============================================================================
+// REVIEWS & DISPUTES
+// ============================================================================
+
+model Review {
+  id                String           @id @default(cuid())
+  orderId           String           @unique
+  order             Order            @relation(fields: [orderId], references: [id])
+  buyerId           String
+  buyer             Buyer            @relation(fields: [buyerId], references: [id])
+  dropId            String
+  drop              Drop             @relation(fields: [dropId], references: [id])
+  curatorId         String
+  curator           Curator          @relation(fields: [curatorId], references: [id])
+  
+  // Ratings
+  overallRating     Int              // 1-5
+  valueRating       Int              // 1-5
+  qualityRating     Int              // 1-5
+  curationRating    Int              // 1-5
+  
+  // Content
+  comment           String?          @db.Text
+  photos            String[]
+  
+  // Moderation
+  isPublic          Boolean          @default(true)
+  moderationStatus  ModerationStatus @default(PENDING)
+  moderatedAt       DateTime?
+  moderatedBy       String?
+  
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  
+  @@index([dropId, moderationStatus])
+  @@index([curatorId, moderationStatus])
+  @@index([buyerId])
+}
+
+model Dispute {
+  id          String        @id @default(cuid())
+  orderId     String        @unique
+  order       Order         @relation(fields: [orderId], references: [id])
+  
+  reason      String
+  description String        @db.Text
+  evidence    String[]      // URLs to uploaded evidence
+  
+  status      DisputeStatus @default(OPEN)
+  resolution  String?       @db.Text
+  resolvedAt  DateTime?
+  resolvedBy  String?
+  
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  
+  @@index([status])
+}
+
+enum ModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum DisputeStatus {
+  OPEN
+  INVESTIGATING
+  RESOLVED
+  CLOSED
+}

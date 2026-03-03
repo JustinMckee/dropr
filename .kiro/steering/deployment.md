@@ -90,6 +90,128 @@ NODE_ENV="production"
 }
 ```
 
+### Subdomain Configuration
+
+**Collective-Specific Subdomains:**
+
+Configure subdomains in Vercel for each collective:
+- **make.dropr.com** - The Make Collective
+- **mod.dropr.com** - The Mod Collective  
+- **mini.dropr.com** - The Mini Collective
+- **dropr.com** - Main landing page
+
+**Important: Single Deployment, Multiple Subdomains**
+
+All subdomains point to the SAME Vercel deployment. This is NOT separate builds or redirections:
+- One codebase serves all subdomains
+- One build process
+- One deployment
+- Middleware detects subdomain and filters content accordingly
+- Shared database, shared infrastructure
+
+**How It Works:**
+1. User visits `mod.dropr.com/drops`
+2. Request hits your single Vercel deployment
+3. Middleware reads the `host` header to detect subdomain (`mod`)
+4. Middleware adds `x-collective: mod` header to the request
+5. Your app code reads this header and filters drops to show only Mod Collective content
+6. Same page component, different data based on collective
+
+**Vercel Setup:**
+1. Deploy your app once to Vercel
+2. Add all subdomains in Vercel project settings → Domains
+3. Configure DNS records (CNAME) for each subdomain pointing to same Vercel deployment
+4. SSL certificates automatically provisioned for all subdomains
+5. All subdomains serve from the same deployment
+
+**DNS Configuration:**
+```
+Type    Name    Value
+CNAME   make    cname.vercel-dns.com  (points to your deployment)
+CNAME   mod     cname.vercel-dns.com  (points to your deployment)
+CNAME   mini    cname.vercel-dns.com  (points to your deployment)
+A       @       76.76.21.21           (Vercel IP for apex domain)
+```
+
+**Middleware for Subdomain Detection:**
+```typescript
+// middleware.ts
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+
+export function middleware(request: NextRequest) {
+  const hostname = request.headers.get('host') || '';
+  const subdomain = hostname.split('.')[0];
+  
+  // Map subdomains to collectives
+  const collectiveMap: Record<string, string> = {
+    'make': 'make',
+    'mod': 'mod',
+    'mini': 'mini',
+  };
+  
+  const collective = collectiveMap[subdomain];
+  
+  if (collective) {
+    // Add collective to request headers for app to read
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set('x-collective', collective);
+    
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
+  }
+  
+  // Main domain (dropr.com) - no collective header
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: [
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+  ],
+};
+```
+
+**Using Collective in Your App:**
+```typescript
+// app/drops/page.tsx
+import { headers } from 'next/headers';
+import { getDropsByCollective } from '@/features/drops/models/drop.actions';
+
+export default async function DropsPage() {
+  const headersList = headers();
+  const collective = headersList.get('x-collective') || null;
+  
+  // Fetch drops filtered by collective
+  const drops = await getDropsByCollective(collective);
+  
+  return (
+    <div>
+      <h1>{collective ? `${collective.toUpperCase()} Collective Drops` : 'All Drops'}</h1>
+      <DropList drops={drops} />
+    </div>
+  );
+}
+```
+
+**Benefits of Single Deployment:**
+- Deploy once, all subdomains updated instantly
+- Shared codebase = easier maintenance
+- Shared infrastructure = lower costs
+- No need to sync data between deployments
+- Consistent user experience across collectives
+- Easy to add new collectives (just add DNS record)
+
+**Environment Variables:**
+- All subdomains share same environment variables
+- Single database connection
+- Single Stripe account
+- Single email service
+- Use `x-collective` header to filter/scope data
+
 ## Database Migrations
 
 ### Migration Strategy
