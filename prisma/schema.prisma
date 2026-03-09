@@ -28,6 +28,7 @@ model User {
   sessions      Session[]
   buyer         Buyer?
   curator       Curator?
+  searchHistory SearchHistory[]
   
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -180,8 +181,9 @@ model Drop {
   // Categorization
   type              DropType
   collective        Collective
-  category          String
-  tags              String[]
+  categoryId        String?
+  category          Category?  @relation("DropCategory", fields: [categoryId], references: [id])
+  tags              Tag[]
   
   // Pricing & Inventory
   price             Decimal  @db.Decimal(10, 2)
@@ -229,7 +231,10 @@ model Drop {
   @@index([isFeatured])
   @@index([slug])
   @@index([status])
-  @@index([category])
+  @@index([categoryId])
+  @@index([price])
+  @@index([title])
+  @@index([description])
 }
 
 model DropFollow {
@@ -397,4 +402,79 @@ enum DisputeStatus {
   INVESTIGATING
   RESOLVED
   CLOSED
+}
+
+
+// ============================================================================
+// SEARCH & FILTERING
+// ============================================================================
+
+model Category {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  collective  Collective
+  description String?
+  icon        String?
+  order       Int        @default(0)
+  
+  drops       Drop[]     @relation("DropCategory")
+  
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  
+  @@index([collective])
+  @@index([slug])
+  @@index([order])
+  @@map("Category")
+}
+
+model Tag {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  type        TagType  @default(GENERAL)
+  
+  drops       Drop[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([type])
+  @@index([name])
+  @@map("Tag")
+}
+
+model SearchHistory {
+  id         String     @id @default(cuid())
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  query      String
+  collective String     // 'MOD', 'MAKE', 'MINI', or 'all'
+  timestamp  DateTime   @default(now())
+  
+  @@index([userId, timestamp])
+  @@index([userId])
+  @@map("SearchHistory")
+}
+
+model SearchAnalytics {
+  id          String   @id @default(cuid())
+  query       String
+  collective  String   // 'MOD', 'MAKE', 'MINI', or 'all'
+  resultCount Int
+  timestamp   DateTime @default(now())
+  
+  @@index([query])
+  @@index([timestamp])
+  @@map("SearchAnalytics")
+}
+
+enum TagType {
+  GENERAL
+  MATERIAL
+  COLOR
+  THEME
+  SKILL_LEVEL
 }

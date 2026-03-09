@@ -8,7 +8,7 @@ export function middleware(request: NextRequest) {
   
   // Check for query parameter override (for local development testing)
   const collectiveParam = searchParams.get('collective');
-  let collective: string | null = null;
+  let collective: string = 'all';
   
   if (collectiveParam && ['MOD', 'MAKE', 'MINI'].includes(collectiveParam.toUpperCase())) {
     collective = collectiveParam.toUpperCase();
@@ -17,11 +17,19 @@ export function middleware(request: NextRequest) {
     const subdomain = hostname.split('.')[0];
     
     // Determine collective based on subdomain
-    collective = getCollectiveFromSubdomain(subdomain);
-    
-    // Default to MOD for www or main domain
-    if (!collective || subdomain === 'www' || hostname.includes('localhost')) {
+    if (subdomain === 'mod') {
       collective = 'MOD';
+    } else if (subdomain === 'make') {
+      collective = 'MAKE';
+    } else if (subdomain === 'mini') {
+      collective = 'MINI';
+    } else if (subdomain === 'www' || hostname.includes('localhost') || hostname.includes('dropr.com')) {
+      // Main homepage shows all collectives
+      collective = 'all';
+    } else {
+      // Fallback to checking collective config
+      const configCollective = getCollectiveFromSubdomain(subdomain);
+      collective = configCollective || 'all';
     }
   }
   

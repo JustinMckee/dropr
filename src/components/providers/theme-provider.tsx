@@ -1,23 +1,8 @@
 'use client';
 
-import { useEffect } from 'react';
-import type { Collective } from '@/lib/collective-config';
+import { ThemeProvider as NextThemesProvider } from 'next-themes';
+import { type ThemeProviderProps } from 'next-themes/dist/types';
 
-interface ThemeProviderProps {
-  children: React.ReactNode;
-  collective: Collective;
-}
-
-export function ThemeProvider({ children, collective }: ThemeProviderProps) {
-  useEffect(() => {
-    // Add collective class to body
-    document.body.classList.remove(
-      'collective-mod',
-      'collective-make',
-      'collective-mini'
-    );
-    document.body.classList.add(`collective-${collective.toLowerCase()}`);
-  }, [collective]);
-
-  return <>{children}</>;
+export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
+  return <NextThemesProvider {...props}>{children}</NextThemesProvider>;
 }

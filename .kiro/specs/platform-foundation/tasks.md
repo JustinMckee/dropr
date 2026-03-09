@@ -3,34 +3,34 @@
 ## Phase 1: Project Initialization
 
 ### 1. Next.js Project Setup
-- [ ] 1.1 Initialize Next.js 15+ project with TypeScript and App Router
-- [ ] 1.2 Configure TypeScript with strict mode in tsconfig.json
-- [ ] 1.3 Set up ESLint with Next.js recommended config
-- [ ] 1.4 Set up Prettier with configuration file
-- [ ] 1.5 Add package.json scripts (dev, build, start, lint, format, type-check)
-- [ ] 1.6 Create .gitignore with Next.js, Node, and environment files
-- [ ] 1.7 Initialize Git repository and make initial commit
+- [x] 1.1 Initialize Next.js 15+ project with TypeScript and App Router
+- [x] 1.2 Configure TypeScript with strict mode in tsconfig.json
+- [x] 1.3 Set up ESLint with Next.js recommended config
+- [x] 1.4 Set up Prettier with configuration file
+- [x] 1.5 Add package.json scripts (dev, build, start, lint, format, type-check)
+- [x] 1.6 Create .gitignore with Next.js, Node, and environment files
+- [x] 1.7 Initialize Git repository and make initial commit
 
 ### 2. Tailwind CSS v4 Setup
-- [ ] 2.1 Install Tailwind CSS v4 dependencies
-- [ ] 2.2 Create app/globals.css with @theme directive
-- [ ] 2.3 Configure CSS custom properties for collective theming
-- [ ] 2.4 Add pattern background definitions (grid, circuit-board, hexagon)
-- [ ] 2.5 Test Tailwind classes in a sample component
-- [ ] 2.6 Configure dark mode support
+- [x] 2.1 Install Tailwind CSS v4 dependencies
+- [x] 2.2 Create app/globals.css with @theme directive
+- [x] 2.3 Configure CSS custom properties for collective theming
+- [x] 2.4 Add pattern background definitions (grid, circuit-board, hexagon)
+- [x] 2.5 Test Tailwind classes in a sample component
+- [x] 2.6 Configure dark mode support
 
 ### 3. shadcn/ui Installation
-- [ ] 3.1 Install shadcn/ui CLI
-- [ ] 3.2 Initialize shadcn/ui with Base UI primitives (not Radix)
-- [ ] 3.3 Install core components (Button, Input, Card, Dialog, Sheet)
-- [ ] 3.4 Install form components (Label, Textarea, Select, Checkbox)
-- [ ] 3.5 Install feedback components (Toast, Alert, Badge)
-- [ ] 3.6 Customize component styles for collective theming
-- [ ] 3.7 Create components/ui/index.ts for exports
+- [x] 3.1 Install shadcn/ui CLI
+- [x] 3.2 Initialize shadcn/ui with Base UI primitives (not Radix)
+- [x] 3.3 Install core components (Button, Input, Card, Dialog, Sheet)
+- [x] 3.4 Install form components (Label, Textarea, Select, Checkbox)
+- [x] 3.5 Install feedback components (Toast, Alert, Badge)
+- [x] 3.6 Customize component styles for collective theming
+- [x] 3.7 Create components/ui/index.ts for exports
 
 ### 4. Environment Configuration
-- [ ] 4.1 Create .env.example with all required variables
-- [ ] 4.2 Create .env.local for local development (gitignored)
+- [x] 4.1 Create .env.example with all required variables
+- [x] 4.2 Create .env.local for local development (gitignored)
 - [ ] 4.3 Document each environment variable in README
 - [ ] 4.4 Set up environment variable validation with Zod
 - [ ] 4.5 Create lib/env.ts for type-safe environment access
@@ -38,87 +38,87 @@
 ## Phase 2: Database Setup
 
 ### 5. Prisma Configuration
-- [ ] 5.1 Install Prisma and Prisma Client
-- [ ] 5.2 Initialize Prisma with PostgreSQL
-- [ ] 5.3 Configure DATABASE_URL in .env.local
-- [ ] 5.4 Create lib/prisma.ts with singleton client
-- [ ] 5.5 Test database connection
+- [x] 5.1 Install Prisma and Prisma Client
+- [x] 5.2 Initialize Prisma with PostgreSQL
+- [x] 5.3 Configure DATABASE_URL in .env.local
+- [x] 5.4 Create lib/prisma.ts with singleton client
+- [x] 5.5 Test database connection
 
 ### 6. Database Schema - User & Auth Models
-- [ ] 6.1 Define User model with email, password, role
-- [ ] 6.2 Define Account model for OAuth
-- [ ] 6.3 Define Session model for NextAuth
-- [ ] 6.4 Define VerificationToken model
-- [ ] 6.5 Add UserRole enum (BUYER, CURATOR, ADMIN)
-- [ ] 6.6 Add indexes for email lookups
-- [ ] 6.7 Run migration for auth models
+- [x] 6.1 Define User model with email, password, role
+- [x] 6.2 Define Account model for OAuth
+- [x] 6.3 Define Session model for NextAuth
+- [x] 6.4 Define VerificationToken model
+- [x] 6.5 Add UserRole enum (BUYER, CURATOR, ADMIN)
+- [x] 6.6 Add indexes for email lookups
+- [x] 6.7 Run migration for auth models
 
 ### 7. Database Schema - Profile Models
-- [ ] 7.1 Define Buyer model with preferences and notifications
-- [ ] 7.2 Define Curator model with reputation and Stripe account
-- [ ] 7.3 Define CuratorFollow model for following curators
-- [ ] 7.4 Add indexes for profile lookups
-- [ ] 7.5 Run migration for profile models
+- [x] 7.1 Define Buyer model with preferences and notifications
+- [x] 7.2 Define Curator model with reputation and Stripe account
+- [x] 7.3 Define CuratorFollow model for following curators
+- [x] 7.4 Add indexes for profile lookups
+- [x] 7.5 Run migration for profile models
 
 ### 8. Database Schema - Drop Models
-- [ ] 8.1 Define Drop model with all fields (title, slug, description, etc.)
-- [ ] 8.2 Add DropType enum (MYSTERY_BOX, SURPLUS, LIMITED_EDITION)
-- [ ] 8.3 Add DropStatus enum (DRAFT, SCHEDULED, LIVE, SOLD_OUT, ENDED, ARCHIVED, CANCELLED)
-- [ ] 8.4 Add Collective enum (MOD, MAKE, MINI)
-- [ ] 8.5 Define DropFollow model
-- [ ] 8.6 Add indexes for drop browsing (collective, status, startTime)
-- [ ] 8.7 Run migration for drop models
+- [x] 8.1 Define Drop model with all fields (title, slug, description, etc.)
+- [x] 8.2 Add DropType enum (MYSTERY_BOX, SURPLUS, LIMITED_EDITION)
+- [x] 8.3 Add DropStatus enum (DRAFT, SCHEDULED, LIVE, SOLD_OUT, ENDED, ARCHIVED, CANCELLED)
+- [x] 8.4 Add Collective enum (MOD, MAKE, MINI)
+- [x] 8.5 Define DropFollow model
+- [x] 8.6 Add indexes for drop browsing (collective, status, startTime)
+- [x] 8.7 Run migration for drop models
 
 ### 9. Database Schema - Order Models
-- [ ] 9.1 Define Order model with payment and shipping fields
-- [ ] 9.2 Add OrderStatus enum (PENDING, PAID, CLOSED, PACKING, SHIPPED, DELIVERED, REVEALED, CANCELLED, DISPUTED)
-- [ ] 9.3 Add platformFee, curatorPayout, escrowReleasedAt fields
-- [ ] 9.4 Add indexes for order queries
-- [ ] 9.5 Run migration for order models
+- [x] 9.1 Define Order model with payment and shipping fields
+- [x] 9.2 Add OrderStatus enum (PENDING, PAID, CLOSED, PACKING, SHIPPED, DELIVERED, REVEALED, CANCELLED, DISPUTED)
+- [x] 9.3 Add platformFee, curatorPayout, escrowReleasedAt fields
+- [x] 9.4 Add indexes for order queries
+- [x] 9.5 Run migration for order models
 
 ### 10. Database Schema - Review & Dispute Models
-- [ ] 10.1 Define Review model with ratings and moderation
-- [ ] 10.2 Add ModerationStatus enum (PENDING, APPROVED, REJECTED)
-- [ ] 10.3 Define Dispute model with status and resolution
-- [ ] 10.4 Add DisputeStatus enum (OPEN, INVESTIGATING, RESOLVED, CLOSED)
-- [ ] 10.5 Add indexes for review and dispute queries
-- [ ] 10.6 Run migration for review and dispute models
+- [x] 10.1 Define Review model with ratings and moderation
+- [x] 10.2 Add ModerationStatus enum (PENDING, APPROVED, REJECTED)
+- [x] 10.3 Define Dispute model with status and resolution
+- [x] 10.4 Add DisputeStatus enum (OPEN, INVESTIGATING, RESOLVED, CLOSED)
+- [x] 10.5 Add indexes for review and dispute queries
+- [x] 10.6 Run migration for review and dispute models
 
 ### 11. Database Seeding
-- [ ] 11.1 Create prisma/seed.ts script
+- [x] 11.1 Create prisma/seed.ts script
 - [ ] 11.2 Add seed data for test users (buyer, curator, admin)
 - [ ] 11.3 Add seed data for sample drops (all three collectives)
 - [ ] 11.4 Add seed data for sample orders
 - [ ] 11.5 Add seed data for sample reviews
-- [ ] 11.6 Run seed script and verify data
-- [ ] 11.7 Add seed script to package.json
+- [x] 11.6 Run seed script and verify data
+- [x] 11.7 Add seed script to package.json
 
 ## Phase 3: Subdomain Architecture
 
 ### 12. Middleware Implementation
-- [ ] 12.1 Create middleware.ts in project root
-- [ ] 12.2 Implement subdomain detection from host header
-- [ ] 12.3 Map subdomains to collectives (make/mod/mini → MAKE/MOD/MINI)
-- [ ] 12.4 Add x-collective header to all responses
-- [ ] 12.5 Handle www subdomain (default to MOD)
-- [ ] 12.6 Handle invalid subdomains (redirect to main domain)
-- [ ] 12.7 Configure middleware matcher to exclude static files
+- [x] 12.1 Create middleware.ts in project root
+- [x] 12.2 Implement subdomain detection from host header
+- [x] 12.3 Map subdomains to collectives (make/mod/mini → MAKE/MOD/MINI)
+- [x] 12.4 Add x-collective header to all responses
+- [x] 12.5 Handle www subdomain (default to MOD)
+- [x] 12.6 Handle invalid subdomains (redirect to main domain)
+- [x] 12.7 Configure middleware matcher to exclude static files
 
 ### 13. Collective Configuration
-- [ ] 13.1 Create lib/collective-config.ts with configuration object
-- [ ] 13.2 Define MOD collective config (purple, keyboard, grid)
-- [ ] 13.3 Define MAKE collective config (cyan, circuit, circuit-board)
-- [ ] 13.4 Define MINI collective config (pink, paintbrush, hexagon)
-- [ ] 13.5 Add SEO metadata for each collective
-- [ ] 13.6 Export getCollectiveConfig() helper function
-- [ ] 13.7 Create TypeScript types for collective config
+- [x] 13.1 Create lib/collective-config.ts with configuration object
+- [x] 13.2 Define MOD collective config (purple, keyboard, grid)
+- [x] 13.3 Define MAKE collective config (cyan, circuit, circuit-board)
+- [x] 13.4 Define MINI collective config (pink, paintbrush, hexagon)
+- [x] 13.5 Add SEO metadata for each collective
+- [x] 13.6 Export getCollectiveConfig() helper function
+- [x] 13.7 Create TypeScript types for collective config
 
 ### 14. Local Development Setup
-- [ ] 14.1 Create lib/collective.ts with getCollective() helper
-- [ ] 14.2 Add query parameter support for testing (?collective=MOD)
+- [x] 14.1 Create lib/collective.ts with getCollective() helper
+- [x] 14.2 Add query parameter support for testing (?collective=MOD)
 - [ ] 14.3 Document /etc/hosts setup for subdomain testing
-- [ ] 14.4 Test subdomain detection in development
-- [ ] 14.5 Verify x-collective header is set correctly
+- [x] 14.4 Test subdomain detection in development
+- [x] 14.5 Verify x-collective header is set correctly
 
 ## Phase 4: Collective Theming
 
@@ -517,3 +517,17 @@
 - Test thoroughly at each phase before moving forward
 - Document any deviations from the plan
 - Keep environment variables secure and never commit them
+
+
+## Phase 11: Search & Discovery Foundation
+
+### 59. Search Models
+- [x] 59.1 Define Category model with collective-specific taxonomy
+- [x] 59.2 Define Tag model with cross-collective attributes
+- [x] 59.3 Define SearchHistory model for user queries
+- [x] 59.4 Define SearchAnalytics model for metrics
+- [x] 59.5 Update Drop model with Category relation
+- [x] 59.6 Update Drop model with Tag many-to-many relation
+- [x] 59.7 Add indexes for search performance
+- [x] 59.8 Run migration for search models
+- [x] 59.9 Seed database with categories and tags

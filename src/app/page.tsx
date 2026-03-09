@@ -1,29 +1,130 @@
-import { getCollective } from '@/lib/collective';
-import { getCollectiveConfig } from '@/lib/collective-config';
+import { headers } from 'next/headers';
+import { HomepageStoreProvider } from '@/features/homepage/hooks/useHomepage';
+import { HeroSection } from '@/components/homepage/HeroSection';
+import { FeaturedDropsSection } from '@/components/homepage/FeaturedDropsSection';
+import { LiveUpcomingDropsSection } from '@/components/homepage/LiveUpcomingDropsSection';
+import { PopularCuratorsSection } from '@/components/homepage/PopularCuratorsSection';
+import { FoundingCuratorsSection } from '@/components/homepage/FoundingCuratorsSection';
+import { CuratorSpotlight } from '@/components/homepage/CuratorSpotlight';
+import { DropSpotlight } from '@/components/homepage/DropSpotlight';
+import { ValuePropositionBuyers } from '@/components/homepage/ValuePropositionBuyers';
+import { ValuePropositionCurators } from '@/components/homepage/ValuePropositionCurators';
+import { CollectiveSwitcher } from '@/components/homepage/CollectiveSwitcher';
+import { fetchHomepageData } from '@/features/homepage/models/homepage.actions';
+import Script from 'next/script';
 
 export default async function Home() {
-  const collective = await getCollective();
-  const config = getCollectiveConfig(collective);
+  const headersList = await headers();
+  const collective = (headersList.get('x-collective') || 'all') as 'MOD' | 'MAKE' | 'MINI' | 'all';
+
+  // Fetch homepage data
+  const data = await fetchHomepageData();
+
+  // Combine popular curators from all collectives for display
+  const popularCurators = [
+    ...(data.popularModders || []),
+    ...(data.popularMakers || []),
+    ...(data.popularMinists || []),
+  ];
+
+  // Generate JSON-LD structured data
+  const baseUrl = collective === 'all' 
+    ? 'https://dropr.com' 
+    : `https://${collective.toLowerCase()}.dropr.com`;
+
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: collective === 'all' ? 'Dropr' : `Dropr ${collective}`,
+    url: baseUrl,
+    description: collective === 'all'
+      ? 'Curated drops for makers and modders'
+      : `Curated drops for ${collective} enthusiasts`,
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: `${baseUrl}/search?q={search_term_string}`,
+      },
+      'query-input': 'required name=search_term_string',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Dropr',
+      url: 'https://dropr.com',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://dropr.com/logo.png',
+      },
+    },
+  };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <div className="text-center">
-        <h1 className="text-6xl font-bold text-collective mb-4">
-          {config.name}
-        </h1>
-        <h2 className="text-4xl font-bold mb-4">{config.messaging.headline}</h2>
-        <p className="mt-4 text-lg text-gray-600 max-w-2xl">
-          {config.messaging.subheadline}
-        </p>
-        <button className="mt-8 px-8 py-3 bg-collective text-white rounded-lg font-semibold hover:opacity-90 transition-opacity">
-          {config.messaging.cta}
-        </button>
-      </div>
-      
-      <div className="mt-16 text-sm text-gray-500">
-        <p>Current collective: {collective}</p>
-        <p>Subdomain: {config.subdomain}.dropr.com</p>
-      </div>
-    </main>
+    <HomepageStoreProvider>
+      {/* JSON-LD Structured Data */}
+      <Script
+        id="structured-data"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+
+      <main className="min-h-screen bg-background">
+        {/* Collective Switcher */}
+        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+          <div className="container mx-auto px-4 py-4 flex justify-center">
+            <CollectiveSwitcher currentCollective={collective} />
+          </div>
+        </div>
+
+        {/* Hero Section */}
+        <HeroSection collective={collective} />
+
+        {/* Featured Drops Section */}
+        <FeaturedDropsSection
+          drops={data.featuredDrops}
+          collective={collective}
+        />
+
+        {/* Drop Spotlight (if available) */}
+        {data.dropSpotlights && data.dropSpotlights.length > 0 && (
+          <DropSpotlight
+            drop={data.dropSpotlights[0]}
+            collective={collective}
+          />
+        )}
+
+        {/* Live & Upcoming Drops Section */}
+        <LiveUpcomingDropsSection
+          drops={data.liveUpcomingDrops}
+          collective={collective}
+        />
+
+        {/* Value Proposition for Buyers */}
+        <ValuePropositionBuyers collective={collective} />
+
+        {/* Popular Curators Section */}
+        <PopularCuratorsSection
+          curators={popularCurators}
+          collective={collective}
+        />
+
+        {/* Curator Spotlight (if available) */}
+        {data.curatorSpotlights && data.curatorSpotlights.length > 0 && (
+          <CuratorSpotlight
+            curator={data.curatorSpotlights[0]}
+            collective={collective}
+          />
+        )}
+
+        {/* Founding Curators Section */}
+        <FoundingCuratorsSection curators={data.foundingCurators} />
+
+        {/* Value Proposition for Curators */}
+        <ValuePropositionCurators
+          curatorCount={data.stats?.totalCurators}
+          totalDrops={data.stats?.totalDrops}
+        />
+      </main>
+    </HomepageStoreProvider>
   );
 }
